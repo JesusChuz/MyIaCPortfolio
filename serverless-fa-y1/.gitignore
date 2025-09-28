@@ -1,0 +1,7 @@
+.vs/
+.git/
+
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
