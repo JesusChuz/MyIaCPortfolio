@@ -1,6 +1,6 @@
-This repository showcases my hands-on experience with Infrastructure as Code (IaC), focusing primarily on Terraform while also including projects using ARM templates and Bicep. The goal is to demonstrate my ability to design and automate deployments across Azure and AWS, following cloud best practices for scalability, security, and maintainability.
+This repository showcases some demos for my personal practice with Infrastructure as Code (IaC) templates, focusing primarily on Terraform while also including projects using ARM templates and Bicep. The goal is to public document my learn path by design and automate deployments across Azure and AWS, following cloud best practices for scalability, security, and maintainability.
 
-Most of the templates here are built with Terraform, reflecting real-world infrastructure patterns and services. Upcoming projects will progressively expand into more advanced deployments across both cloud platforms.
+Most of the templates here will be built with Terraform, reflecting real-world infrastructure patterns and services. Upcoming projects will progressively expand into more advanced deployments across both cloud platforms.
 
 Planned Projects
 Azure
