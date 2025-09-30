@@ -13,9 +13,7 @@ Deploy a Consumption Function app running on Windows with some http trigger and 
 
 🖥️ Linux Virtual Machine
 
-Deploy a Linux VM with Virtual Network, Subnet, and Public IP.
-
-Configure backups and implement RBAC for access control.
+Deploy a Linux VM with Virtual Network, Subnet, and Public IP and also configured backups with Azure Recovery Service Vault!  
 
 ⚡ Elastic Premium Function App
 

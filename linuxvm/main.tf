@@ -126,3 +126,35 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 }
+
+resource "azurerm_recovery_services_vault" "vault" {
+  name                = "vault-${random_string.suffix.result}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard"
+  soft_delete_enabled = true
+}
+
+resource "azurerm_backup_policy_vm" "weekly" {
+  name                = "weekly-backup-policy"
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.vault.name
+
+  backup {
+    frequency = "Weekly"
+    time      = "23:00" # UTC time
+    weekdays  = ["Sunday"]
+  }
+
+  retention_weekly {
+    count    = 4
+    weekdays = ["Sunday"]
+  }
+}
+
+resource "azurerm_backup_protected_vm" "vm_protection" {
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.vault.name
+  source_vm_id        = azurerm_linux_virtual_machine.vm.id
+  backup_policy_id    = azurerm_backup_policy_vm.weekly.id
+}
