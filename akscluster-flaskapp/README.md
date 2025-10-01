@@ -24,16 +24,7 @@ Step 2: Make sure your main project is configured to use the remote backend
 
 cd aks-infra
 
-2.2 Make sure backend.tf is pointing to the storage account and container we created. Example:
-
-terraform {
-  backend "azurerm" {
-    resource_group_name   = "tfstate-rg"
-    storage_account_name  = "tfstatestorageaksdemo"
-    container_name        = "tfstate"
-    key                   = "aks-flask-prod.terraform.tfstate"
-  }
-}
+2.2 Make sure backend.tf is pointing to the storage account and container we created.
 
 2.3 Initialize Terraform — this will configure the remote backend:
 
@@ -44,7 +35,7 @@ Type yes if prompted.
 
 Step 3: Deploy your AKS + Flask infrastructure
 
-3.1 Preview the plan:
+3.1 Still inside the aks-infra folder, preview the plan:
 
 terraform plan
 
