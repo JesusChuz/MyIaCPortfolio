@@ -1,0 +1,127 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git(
+                    branch: 'main',
+                    url: 'https://github.com/JesusChuz/MyIaCPortfolio.git'
+                )
+            }
+        }
+        stage('Authenticate with Service Principal') {
+            steps {
+                withCredentials([azureServicePrincipal('014e4538-18c8-4227-9797-06820ab91337')]) {
+                    bat '''
+                        cd serverless-fa-y1
+                        REM --- Authenticate with Azure ---
+                        az login --service-principal ^
+                            -u %AZURE_CLIENT_ID% ^
+                            -p %AZURE_CLIENT_SECRET% ^
+                            -t %AZURE_TENANT_ID%
+
+                        az account set -s %AZURE_SUBSCRIPTION_ID%
+                        az resource list    
+                    '''
+                }
+            }
+        }
+        stage('Terraform Init and Apply'){
+            steps(){
+                bat '''
+                    cd serverless-fa-y1
+                    terraform init -input=false
+                    terraform plan -out=tfplan -input=false
+                    terraform apply -auto-approve tfplan
+                    terraform output -json
+                '''
+            }
+        }
+        stage('Terraform Output') {
+            steps {
+                script {
+                    def tfOutput = bat(
+                        script: """
+                            cd serverless-fa-y1
+                            terraform output -json
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    // Remove Jenkins CMD noise (the echoed commands and prompt)
+                    def cleanOutput = tfOutput.readLines()
+                                              .findAll { !it.startsWith("C:") && !it.startsWith("cd") && !it.startsWith("terraform") }
+                                              .join("\n")
+                    echo "Raw terraform output:\n${cleanOutput}"
+                    def props = new groovy.json.JsonSlurper().parseText(cleanOutput)
+                    env.AZ_RESOURCE_GROUP = props.resource_group_name.value
+                    env.AZ_APP_NAME       = props.app_service_name.value
+                    env.AZ_SLOT_NAME      = props.slot_name.value
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                bat '''
+                    cd serverless-fa-y1/funcappcode
+                    dotnet build --configuration Release
+                    dotnet publish -c Release -o ./publish
+                    dir
+                    cd publish
+                    dir
+                    powershell -Command "Compress-Archive -Path * -DestinationPath functionapp.zip -Force"
+                '''
+            }
+        }
+        stage('Deploy to Function app slot') {
+            steps {
+                bat '''
+                    REM --- Deploy code to slot ---
+                    dir
+                    cd serverless-fa-y1/funcappcode/publish
+                    dir
+                    az functionapp deployment source config-zip ^
+                    --resource-group %AZ_RESOURCE_GROUP% ^
+                    --name %AZ_APP_NAME% ^
+                    --slot %AZ_SLOT_NAME% ^
+                    --src functionapp.zip
+                '''
+            }
+        }
+        stage('Test Staging Slot') {
+            steps {
+                script {
+                    // Build URL cleanly
+                    def appName = env.AZ_APP_NAME
+                    def slotName = env.AZ_SLOT_NAME
+                    def url = "https://${appName}-${slotName}.azurewebsites.net/api/runhttp"
+        
+                    echo "Testing endpoint: ${url}"
+        
+                    // Run curl (Windows)
+                    def response = bat(
+                        script: "curl -s -o nul -w \"%{http_code}\" https://funcappdemo-4yc-staging.azurewebsites.net/api/runhttp",
+                        returnStdout: true
+                        ).trim()
+        
+                    echo "Response status code: ${response}"
+        
+                    if (response != "200") {
+                        error("Staging endpoint test failed. Aborting swap.")
+                    }
+                }
+            }
+        }
+        stage('Swap Slot') {
+            steps {
+                bat '''
+                    az functionapp deployment slot swap ^
+                        --resource-group %AZ_RESOURCE_GROUP% ^
+                        --name %AZ_APP_NAME% ^
+                        --slot %AZ_SLOT_NAME% ^
+                        --target-slot production
+                '''
+            }
+        }
+    }
+}
