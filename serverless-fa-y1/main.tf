@@ -6,8 +6,15 @@ terraform {
     }
   }
 }
+
+variable "subscription_id" {
+  description = "My subscription id"
+  type        = string
+}
+
 provider "azurerm" {
   features {}
+  subscription_id = "${var.subscription_id}"
 }
 
 variable "location" {
@@ -51,7 +58,7 @@ resource "azurerm_storage_account" "sa" {
   allow_nested_items_to_be_public = false
 }
 
-# App Service Plan (Elastic Premium)
+# App Service Plan
 resource "azurerm_service_plan" "plan" {
   name                = "${var.base_plan_name}-${random_string.suffix.result}"
   location            = azurerm_resource_group.rg.location
@@ -84,4 +91,31 @@ resource "azurerm_windows_function_app" "func" {
   app_settings = {
     FUNCTIONS_EXTENSION_VERSION = "~4"
   }  
+}
+
+# Deployment Slot (Staging, Dotnet 8)
+resource "azurerm_windows_function_app_slot" "staging" {
+  name           = "staging"
+  function_app_id = azurerm_windows_function_app.func.id
+  storage_account_name       = azurerm_storage_account.sa.name
+  storage_account_access_key = azurerm_storage_account.sa.primary_access_key
+
+  site_config {
+
+    application_stack {
+      dotnet_version = "v8.0"
+    }
+  }
+}
+
+output "resource_group_name" {
+  value = azurerm_resource_group.rg.name
+}
+
+output "app_service_name" {
+  value = azurerm_windows_function_app.func.name
+}
+
+output "slot_name" {
+  value = azurerm_windows_function_app_slot.staging.name
 }

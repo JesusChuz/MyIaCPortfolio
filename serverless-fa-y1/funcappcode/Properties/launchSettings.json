@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "funcappcode": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7274",
+      "launchBrowser": false
+    }
+  }
+}
