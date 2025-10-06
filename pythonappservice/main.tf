@@ -11,7 +11,7 @@ provider "azurerm" {
   features {}
 }
 
-# Random suffix for uniqueness
+# Random suffix for uniqueness // add comment to see if pipeline runs automatically
 resource "random_string" "rg_suffix" {
   length  = 4
   upper   = false
