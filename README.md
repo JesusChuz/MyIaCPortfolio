@@ -23,7 +23,7 @@ Integrate with a VNet and secure the Storage Account with Private Endpoints.
 
 📦 Container App
 
-Deploy a Container App connected to Azure Container Registry.
+Deploy a Container App connected to DockerHub.
 
 Enable ingress for external access.
 
