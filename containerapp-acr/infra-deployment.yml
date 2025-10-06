@@ -24,6 +24,7 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'version'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
           allowTelemetryCollection: true
       - task: TerraformCLI@2
         inputs:
