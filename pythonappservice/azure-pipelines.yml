@@ -22,8 +22,7 @@ stages:
         name: MySelfHosted
       steps:
       # Step 1: install Terraform on the Azure Pipelines agent
-      - task: TerraformCLI@1
+      - task: TerraformCLI@2
         inputs:
-          command: 'validate'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/pythonwebapp'
+          command: 'version'
           allowTelemetryCollection: true
