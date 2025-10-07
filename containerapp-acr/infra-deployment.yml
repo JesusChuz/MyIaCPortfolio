@@ -19,26 +19,27 @@ stages:
     - job: TerraformContinuousIntegrationJob
       displayName: TerraformContinuousIntegration - CI Job - Backend creation
       pool:
-        name: MySelfHosted
+        name: MySelfHosted   
       steps:
+      - checkout: self
       - script: dir
         displayName: List files in workspace
 
       - task: TerraformCLI@2
         inputs:
           command: 'version'
-          workingDirectory: '/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
           allowTelemetryCollection: true
       - task: TerraformCLI@2
         inputs:
           command: 'init'
-          workingDirectory: '/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
           allowTelemetryCollection: true
         displayName: "Initialize the template for the backend"
       - task: TerraformCLI@2
         inputs:
           command: 'plan'
-          workingDirectory: '/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
           allowTelemetryCollection: true
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
@@ -46,7 +47,8 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
-          workingDirectory: '/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
           commandOptions: 'plan.out'
           allowTelemetryCollection: true
         displayName: "Deploy the resources"
+
