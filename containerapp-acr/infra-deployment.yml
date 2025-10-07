@@ -24,6 +24,14 @@ stages:
       - checkout: self
       - script: dir
         displayName: List files in workspace
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: '$(serviceConnection)'  # This must match your service connection name
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            echo "Azure CLI authenticated"
+
       - task: TerraformCLI@2
         inputs:
           command: 'version'
@@ -40,7 +48,6 @@ stages:
           command: 'plan'
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           allowTelemetryCollection: true
-          backendServiceArm: '$(serviceConnection)'
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
 
@@ -50,6 +57,5 @@ stages:
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           allowTelemetryCollection: true
           commandOptions: '-auto-approve'
-          backendServiceArm: '$(serviceConnection)'
         displayName: "Deploy the resources"
 
