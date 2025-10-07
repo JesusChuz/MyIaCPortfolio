@@ -11,6 +11,15 @@ provider "azurerm" {
   features {}
 }
 
+variable "subscription_id" {
+  description = "My subscription id"
+  type        = string
+}
+
+provider "azurerm" {
+  features {}
+  subscription_id = "${var.subscription_id}"
+}
 # -------------------------------
 # Resource Group
 # -------------------------------
