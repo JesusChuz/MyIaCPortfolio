@@ -27,18 +27,18 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'version'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '/create-backend'
           allowTelemetryCollection: true
       - task: TerraformCLI@2
         inputs:
           command: 'init'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '/create-backend'
           allowTelemetryCollection: true
         displayName: "Initialize the template for the backend"
       - task: TerraformCLI@2
         inputs:
           command: 'plan'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '/create-backend'
           allowTelemetryCollection: true
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
@@ -46,7 +46,7 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '/create-backend'
           commandOptions: 'plan.out'
           allowTelemetryCollection: true
         displayName: "Deploy the resources"
