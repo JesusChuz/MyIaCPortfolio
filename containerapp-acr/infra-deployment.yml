@@ -24,6 +24,10 @@ stages:
       - checkout: self
       - script: dir
         displayName: List files in workspace
+
+      - task: TerraformInstaller@2
+        inputs:
+          terraformVersion: '1.13.3'
       - task: TerraformCLI@2
         inputs:
           command: 'version'
@@ -31,6 +35,7 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
           allowTelemetryCollection: true
         displayName: "Initialize the template for the backend"
       - task: TerraformCLI@2
