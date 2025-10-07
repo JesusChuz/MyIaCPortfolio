@@ -8,8 +8,14 @@ terraform {
   required_version = ">= 1.3.0"
 }
 
+variable "subscription_id" {
+  description = "My subscription id"
+  type        = string
+}
+
 provider "azurerm" {
   features {}
+  subscription_id = "${var.subscription_id}"
 }
 
 # Resource Group for Terraform state
