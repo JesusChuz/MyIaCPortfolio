@@ -33,12 +33,14 @@ stages:
           command: 'init'
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           allowTelemetryCollection: true
+          backendServiceArm: '$(serviceConnection)'
         displayName: "Initialize the template for the backend"
       - task: TerraformCLI@2
         inputs:
           command: 'plan'
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           allowTelemetryCollection: true
+          backendServiceArm: '$(serviceConnection)'
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
 
@@ -46,7 +48,8 @@ stages:
         inputs:
           command: 'apply'
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
-          commandOptions: 'plan.out'
           allowTelemetryCollection: true
+          commandOptions: '-auto-approve'
+          backendServiceArm: '$(serviceConnection)'
         displayName: "Deploy the resources"
 
