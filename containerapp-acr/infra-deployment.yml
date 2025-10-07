@@ -24,10 +24,6 @@ stages:
       - checkout: self
       - script: dir
         displayName: List files in workspace
-
-      - task: TerraformInstaller@2
-        inputs:
-          terraformVersion: '1.13.3'
       - task: TerraformCLI@2
         inputs:
           command: 'version'
@@ -35,13 +31,13 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'init'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           allowTelemetryCollection: true
         displayName: "Initialize the template for the backend"
       - task: TerraformCLI@2
         inputs:
           command: 'plan'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           allowTelemetryCollection: true
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
@@ -49,7 +45,7 @@ stages:
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/create-backend'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           commandOptions: 'plan.out'
           allowTelemetryCollection: true
         displayName: "Deploy the resources"
