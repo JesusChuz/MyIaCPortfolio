@@ -7,10 +7,6 @@ terraform {
   }
 }
 
-provider "azurerm" {
-  features {}
-}
-
 variable "subscription_id" {
   description = "My subscription id"
   type        = string
