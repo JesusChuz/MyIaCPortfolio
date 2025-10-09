@@ -14,7 +14,7 @@ variables:
 
 stages:
   - stage: TerraformContinuousIntegration 
-    displayName: Terraform Module - CI
+    displayName: Create Back end with Terraform - CI
     jobs:
     - job: TerraformContinuousIntegrationJob
       displayName: TerraformContinuousIntegration - CI Job - Backend creation
