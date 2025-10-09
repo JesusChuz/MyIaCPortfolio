@@ -44,6 +44,39 @@ stages:
           allowTelemetryCollection: true
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: '$(serviceConnection)'
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            cd containerapp-acr
+            cd create-backend
+            set -euo pipefail
+
+            # Example mapping: terraform_address -> az cli command to produce resource id
+            declare -A IMPORT_MAP=(
+              ["azurerm_resource_group.rg"]="az group show -n tfstatestoragecontapp --query id -o tsv"
+              ["azurerm_storage_account.sa"]="az storage account show -n tfstatestoragecontapp -g tfstatestoragecontapp --query id -o tsv"
+            )
+
+            for addr in "${!IMPORT_MAP[@]}"; do
+              echo "Checking Terraform state for $addr..."
+              if terraform state list | grep -qx "$addr"; then
+                echo "$addr already in state, skipping import."
+                continue
+              fi
+
+              echo "$addr not in state. Locating resource id with az..."
+              resource_id=$(${IMPORT_MAP[$addr]} || true)
+              if [ -z "$resource_id" ]; then
+                echo "Resource for $addr not found in Azure, skipping import (it may be safe to create)."
+                continue
+              fi
+
+              echo "Importing $addr -> $resource_id"
+              terraform import -lock-timeout=300 "$addr" "$resource_id"
+            done
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
