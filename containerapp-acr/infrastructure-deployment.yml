@@ -7,7 +7,7 @@ parameters:
 
 stages:
   - stage: TerraformContinuousIntegrationInfra 
-    displayName: Terraform Module - CI
+    displayName: Create Infrastructure with Terraform - CI
     jobs:
     - job: TerraformContinuousIntegrationJob
       displayName: TerraformContinuousIntegrationInfra - CI Job - Infrastructure creation
