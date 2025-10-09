@@ -1,1 +1,8 @@
 subscription_id = "8412747f-ace3-4b85-8ef7-4e8c0eab877d"
+resource_groupname = "tfstatestoragecontapp"
+location_name = "Canada Central"
+storage_name = "tfstatestoragecontapp"
+storage_tier = "Standard"
+storage_replication_type = "LRS"
+storagecontainer_name = "tfstate-contapp"
+storage_container_access_type = "private"
