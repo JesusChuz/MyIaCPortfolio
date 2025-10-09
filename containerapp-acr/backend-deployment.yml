@@ -59,8 +59,8 @@ stages:
 
             # Mapping: terraform_address -> script block that returns resource id as string (or $null)
             $IMPORT_MAP = @{
-              "azurerm_resource_group.rg"  = { az group show -n "my-rg" --query id -o tsv 2>$null }
-              "azurerm_storage_account.sa" = { az storage account show -n "myStorageAccount" -g "my-rg" --query id -o tsv 2>$null }
+              "azurerm_resource_group.rg"  = { az group show -n "tfstatestoragecontapp" --query id -o tsv 2>$null }
+              "azurerm_storage_account.sa" = { az storage account show -n "tfstatestoragecontapp" -g "tfstatestoragecontapp" --query id -o tsv 2>$null }
             }
 
             # Ensure terraform is initialized and available in the current directory
@@ -68,7 +68,7 @@ stages:
             try {
               & terraform state list > $null 2>&1
             } catch {
-              Write-Host "terraform state could not be listed. Ensure 'terraform init' has been run in this working directory and backend is accessible."
+              Write-Host "Terraform state could not be listed. Ensure 'terraform init' has been run in this working directory and backend is accessible."
               throw
             }
 
@@ -82,7 +82,7 @@ stages:
                   if ($line.Trim() -eq $addr) { $inState = $true; break }
                 }
               } catch {
-                Write-Host "Failed to list terraform state for check. $($_.Exception.Message)"
+                Write-Host ("Failed to list terraform state for check. " + $_.Exception.Message)
                 throw
               }
 
@@ -91,30 +91,14 @@ stages:
                 continue
               }
 
-              Write-Host "$addr not in state. Locating resource id with az..."
+              Write-Host "$addr not in state. Locating resource ID with az..."
               $resourceId = $null
               try {
                 $resourceId = & $IMPORT_MAP[$addr].Invoke()
                 if ($resourceId) { $resourceId = $resourceId.Trim() } else { $resourceId = $null }
               } catch {
-                Write-Host "az query for $addr failed: $($_.Exception.Message)"
-                $resourceId = $null
-              }
-
-              if ([string]::IsNullOrWhiteSpace($resourceId)) {
-                Write-Host "Resource for $addr not found in Azure, skipping import (it may be safe to create)."
-                continue
-              }
-
-              Write-Host "Importing $addr -> $resourceId"
-              try {
-                & terraform import -lock-timeout=300 $addr $resourceId
-                Write-Host "Import succeeded for $addr"
-              } catch {
-                Write-Host "Import failed for $addr: $($_.Exception.Message)"
-                throw
-              }
-            }
+              Write-Host ("az query for $addr failed: " + $_.Exception.Message)
+              $resourceId
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
