@@ -24,7 +24,6 @@ stages:
       - checkout: self
       - script: dir
         displayName: List files in workspace
-
       - task: TerraformCLI@2
         inputs:
           command: 'version'
@@ -53,4 +52,5 @@ stages:
           runAzLogin: true
           commandOptions: '-auto-approve'
           allowTelemetryCollection: true
+  - template: infrastructure-deployment.yml
 
