@@ -52,5 +52,9 @@ stages:
           runAzLogin: true
           commandOptions: '-auto-approve'
           allowTelemetryCollection: true
+        displayName: "Deploy the backend"
   - template: infrastructure-deployment.yml
+    parameters:
+      serviceConnection: ${{ variables.serviceConnection }}
+      azureLocation: ${{ variables.azureLocation }}
 

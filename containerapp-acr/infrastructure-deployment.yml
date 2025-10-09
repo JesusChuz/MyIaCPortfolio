@@ -1,23 +1,16 @@
 # Azure Pipeline that run basic continuous integration on a Terraform project
-# This makes sure the pipeline is triggered every time code is pushed in the validation-testing example source, on all branches.
-trigger:
-  branches:
-    include:
-    - 'main'
-  paths:
-    include:
-    - 'MyIaCPortfolio/containerapp-acr/*'
-
-variables:
-  serviceConnection: 'ServiceConnectiontoDevOps'
-  azureLocation: 'canadacentral'
+parameters:
+  - name: serviceConnection
+    type: string
+  - name: azureLocation
+    type: string
 
 stages:
-  - stage: TerraformContinuousIntegration 
+  - stage: TerraformContinuousIntegrationInfra 
     displayName: Terraform Module - CI
     jobs:
     - job: TerraformContinuousIntegrationJob
-      displayName: TerraformContinuousIntegration - CI Job - Infrastructure creation
+      displayName: TerraformContinuousIntegrationInfra - CI Job - Infrastructure creation
       pool:
         name: MySelfHosted   
       steps:
@@ -53,4 +46,5 @@ stages:
           runAzLogin: true
           commandOptions: '-auto-approve'
           allowTelemetryCollection: true
+        displayName: "Provision the infrastructure"
 
