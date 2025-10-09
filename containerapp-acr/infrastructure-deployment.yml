@@ -6,11 +6,11 @@ parameters:
     type: string
 
 stages:
-  - stage: TerraformContinuousIntegration 
+  - stage: TerraformContinuousIntegrationInfra 
     displayName: Terraform Module - CI
     jobs:
     - job: TerraformContinuousIntegrationJob
-      displayName: TerraformContinuousIntegration - CI Job - Infrastructure creation
+      displayName: TerraformContinuousIntegrationInfra - CI Job - Infrastructure creation
       pool:
         name: MySelfHosted   
       steps:
@@ -46,4 +46,5 @@ stages:
           runAzLogin: true
           commandOptions: '-auto-approve'
           allowTelemetryCollection: true
+        displayName: "Provision the infrastructure"
 
