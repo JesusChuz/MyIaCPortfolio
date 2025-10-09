@@ -99,6 +99,8 @@ stages:
               } catch {
               Write-Host ("az query for $addr failed: " + $_.Exception.Message)
               $resourceId
+              }
+            }
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
