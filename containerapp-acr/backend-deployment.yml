@@ -59,8 +59,8 @@ stages:
 
             # Mapping: terraform_address -> script block that returns resource id as string (or $null)
             $IMPORT_MAP = @{
-              "azurerm_resource_group.rg"       = { az group show -n "my-rg" --query id -o tsv 2>$null }
-              "azurerm_storage_account.sa"      = { az storage account show -n "myStorageAccount" -g "my-rg" --query id -o tsv 2>$null }
+              "azurerm_resource_group.rg"  = { az group show -n "my-rg" --query id -o tsv 2>$null }
+              "azurerm_storage_account.sa" = { az storage account show -n "myStorageAccount" -g "my-rg" --query id -o tsv 2>$null }
             }
 
             # Ensure terraform is initialized and available in the current directory
@@ -77,17 +77,12 @@ stages:
               $inState = $false
               try {
                 $stateList = & terraform state list
-                if ($stateList -match ("^" + [regex]::Escape($addr) + "$")) {
-                  $inState = $true
-                } else {
-                  # Also test exact match line-by-line
-                  $lines = $stateList -split "`n"
-                  foreach ($line in $lines) {
-                    if ($line.Trim() -eq $addr) { $inState = $true; break }
-                  }
+                $lines = $stateList -split "`n"
+                foreach ($line in $lines) {
+                  if ($line.Trim() -eq $addr) { $inState = $true; break }
                 }
               } catch {
-                Write-Host "Failed to list terraform state for check. $_"
+                Write-Host "Failed to list terraform state for check. $($_.Exception.Message)"
                 throw
               }
 
@@ -102,7 +97,7 @@ stages:
                 $resourceId = & $IMPORT_MAP[$addr].Invoke()
                 if ($resourceId) { $resourceId = $resourceId.Trim() } else { $resourceId = $null }
               } catch {
-                Write-Host "az query for $addr failed: $_"
+                Write-Host "az query for $addr failed: $($_.Exception.Message)"
                 $resourceId = $null
               }
 
@@ -116,11 +111,10 @@ stages:
                 & terraform import -lock-timeout=300 $addr $resourceId
                 Write-Host "Import succeeded for $addr"
               } catch {
-                Write-Host "Import failed for $addr: $_"
+                Write-Host "Import failed for $addr: $($_.Exception.Message)"
                 throw
               }
             }
-
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
