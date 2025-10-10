@@ -42,21 +42,13 @@ stages:
           environmentServiceName: 'ServiceConnectiontoDevOps'
           runAzLogin: true
           allowTelemetryCollection: true
-          publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
-      # Convert plan.out to JSON
-      - script: |
-          cd "$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend"
-
-          if (Test-Path "plan.out") {
-            terraform show -json plan.out > plan.json
-            Write-Host "plan.out found and converted to plan.json"
-          } else {
-            Write-Error "plan.out not found in $(System.DefaultWorkingDirectory)/containerapp-acr/create-backend"
-            exit 1
-          }
-        displayName: "Convert Terraform plan to JSON"
-        workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
+      - task: TerraformCLI@2
+        inputs:
+          command: 'output'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
+          commandOptions: '-json'
+          allowTelemetryCollection: false
       - task: AzureCLI@2
         inputs:
           azureSubscription: '$(serviceConnection)'
@@ -64,53 +56,46 @@ stages:
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           scriptLocation: 'inlineScript'
           inlineScript: |
-            Write-Host "Reading Terraform plan.json to identify resources for import..."
+            # Fail on errors
+            $ErrorActionPreference = "Stop"
+             # Run terraform output and capture JSON
+            $tfOutput = terraform output -json | Out-String
+            
+            Write-Host "Raw Terraform output:"
+            Write-Host $tfOutput
+            
+            # Parse JSON
+            $props = $tfOutput | ConvertFrom-Json
+            
+            # Extract values from outputs
+            $rgName = $props.resource_group_name.value
+            $saName = $props.app_service_name.value
+            $saContainerName = $props.slot_name.value
 
-            $planPath = "$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend/plan.json"
-            $plan = Get-Content $planPath -Raw | ConvertFrom-Json
+            Write-Host "Resource Group: $rgName"
+            Write-Host "Storage account: $saName"
+            Write-Host "Storage account container: $saContainerName"
+            
+            # Export as Azure DevOps pipeline variables
+            Write-Host "##vso[task.setvariable variable=AZ_RG;isOutput=true]$rgName"
+            Write-Host "##vso[task.setvariable variable=AZ_SA;isOutput=true]$saName"
+            Write-Host "##vso[task.setvariable variable=AZ_SA_CONTAINER;isOutput=true]$saContainerName"
 
-            # Filter only relevant resource types (you can modify this list)
-            $targetTypes = @("azurerm_resource_group", "azurerm_storage_account", "azurerm_storage_container")
+            Write-Host "Running Terraform imports (ignoring any failures)..."
 
-            $resources = @()
-            foreach ($res in $plan.resource_changes) {
-              if ($targetTypes -contains $res.type) {
-                # Construct a reasonable terraform address (module paths are handled automatically)
-                $addr = "$($res.type).$($res.name)"
-                $resources += @{ addr = $addr; type = $res.type }
-              }
-            }
-
-            if (-not $resources) {
-              Write-Host "No matching resources found in plan."
-              exit 0
-            }
-
-            Write-Host "Found $($resources.Count) resource(s) to validate for import..."
+            $resources = @(
+              @{ addr = "azurerm_resource_group.tfstate_rg"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp" },
+              @{ addr = "azurerm_storage_account.tfstate_sa"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp" }
+              @{ addr = "azurerm_storage_container.tfstate_container"; id = "https://tfstatestoragecontapp.blob.core.windows.net/tfstate-contapp" }
+            )
 
             foreach ($r in $resources) {
-              Write-Host "Attempting import for $($r.addr)..."
-
-              switch ($r.type) {
-                "azurerm_resource_group" {
-                  $id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp"
-                }
-                "azurerm_storage_account" {
-                  $id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp"
-                }
-                "azurerm_storage_container" {
-                  $id = "tfstatestoragecontapp/tfstate-contapp"
-                }
-                default {
-                  continue
-                }
-              }
-
+              Write-Host "Attempting to import $($r.addr)..."
               try {
-                & terraform import $($r.addr) $id
-                Write-Host "✅ Imported $($r.addr)"
+                & terraform import $($r.addr) $($r.id)
+                Write-Host "Successfully imported $($r.addr)"
               } catch {
-                Write-Host "⚠️ Skipping $($r.addr) - already imported or not found."
+                Write-Host "Skipping $($r.addr) - likely already in state or not found."
               }
             }
       - task: TerraformCLI@2
