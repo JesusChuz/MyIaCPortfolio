@@ -42,7 +42,7 @@ stages:
           environmentServiceName: 'ServiceConnectiontoDevOps'
           runAzLogin: true
           allowTelemetryCollection: true
-          commandOptions: '-out=$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend/plan.out'
+          commandOptions: '-out=plan.out'
         displayName: "Plan the deployment"
       # Convert plan.out to JSON
       - script: |
