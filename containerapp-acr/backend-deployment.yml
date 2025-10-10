@@ -44,6 +44,12 @@ stages:
           allowTelemetryCollection: true
           publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
+      
+        # Convert plan.out to JSON
+      - script: |
+          terraform show -json plan.out > plan.json
+        workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
+        displayName: "Convert Terraform plan to JSON"
       - task: AzureCLI@2
         inputs:
           azureSubscription: '$(serviceConnection)'
@@ -51,23 +57,53 @@ stages:
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           scriptLocation: 'inlineScript'
           inlineScript: |
-            # Fail on errors
-            $ErrorActionPreference = "Stop"
-            Write-Host "Running Terraform imports (ignoring any failures)..."
+            Write-Host "Reading Terraform plan.json to identify resources for import..."
 
-            $resources = @(
-              @{ addr = "azurerm_resource_group.tfstate_rg"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp" },
-              @{ addr = "azurerm_storage_account.tfstate_sa"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp" }
-              @{ addr = "azurerm_storage_container.tfstate_container"; id = "https://tfstatestoragecontapp.blob.core.windows.net/tfstate-contapp" }
-            )
+            $planPath = "$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend/plan.json"
+            $plan = Get-Content $planPath -Raw | ConvertFrom-Json
+
+            # Filter only relevant resource types (you can modify this list)
+            $targetTypes = @("azurerm_resource_group", "azurerm_storage_account", "azurerm_storage_container")
+
+            $resources = @()
+            foreach ($res in $plan.resource_changes) {
+              if ($targetTypes -contains $res.type) {
+                # Construct a reasonable terraform address (module paths are handled automatically)
+                $addr = "$($res.type).$($res.name)"
+                $resources += @{ addr = $addr; type = $res.type }
+              }
+            }
+
+            if (-not $resources) {
+              Write-Host "No matching resources found in plan."
+              exit 0
+            }
+
+            Write-Host "Found $($resources.Count) resource(s) to validate for import..."
 
             foreach ($r in $resources) {
-              Write-Host "Attempting to import $($r.addr)..."
+              Write-Host "Attempting import for $($r.addr)..."
+
+              switch ($r.type) {
+                "azurerm_resource_group" {
+                  $id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp"
+                }
+                "azurerm_storage_account" {
+                  $id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp"
+                }
+                "azurerm_storage_container" {
+                  $id = "tfstatestoragecontapp/tfstate-contapp"
+                }
+                default {
+                  continue
+                }
+              }
+
               try {
-                & terraform import $($r.addr) $($r.id)
-                Write-Host "Successfully imported $($r.addr)"
+                & terraform import $($r.addr) $id
+                Write-Host "✅ Imported $($r.addr)"
               } catch {
-                Write-Host "Skipping $($r.addr) - likely already in state or not found."
+                Write-Host "⚠️ Skipping $($r.addr) - already imported or not found."
               }
             }
       - task: TerraformCLI@2
