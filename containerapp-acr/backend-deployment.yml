@@ -92,7 +92,9 @@ stages:
                 Write-Host "Error while checking or importing $($r.addr): $($_.Exception.Message)"
               }
             }
+            exit 0
         displayName: "Validate if it is needed to import resources from the state"  
+
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
