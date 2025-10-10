@@ -42,14 +42,21 @@ stages:
           environmentServiceName: 'ServiceConnectiontoDevOps'
           runAzLogin: true
           allowTelemetryCollection: true
-          publishPlanResults: 'plan.out'
+          commandOptions: '-out=$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend/plan.out'
         displayName: "Plan the deployment"
-      
-        # Convert plan.out to JSON
+      # Convert plan.out to JSON
       - script: |
-          terraform show -json plan.out > plan.json
-        workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
+          cd "$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend"
+
+          if (Test-Path "plan.out") {
+            terraform show -json plan.out > plan.json
+            Write-Host "plan.out found and converted to plan.json"
+          } else {
+            Write-Error "plan.out not found in $(System.DefaultWorkingDirectory)/containerapp-acr/create-backend"
+            exit 1
+          }
         displayName: "Convert Terraform plan to JSON"
+        workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
       - task: AzureCLI@2
         inputs:
           azureSubscription: '$(serviceConnection)'
