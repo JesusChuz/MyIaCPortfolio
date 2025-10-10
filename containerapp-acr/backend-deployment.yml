@@ -50,14 +50,6 @@ stages:
           scriptType: 'ps'
           scriptLocation: 'inlineScript'
           inlineScript: |
-            dir
-            cd containerapp-acr
-            cd create-backend
-            dir
-            cd .terraform
-            dir
-            # Fail on errors
-            $ErrorActionPreference = "Stop"
             Write-Host "Running Terraform imports (ignoring any failures)..."
 
             $resources = @(
@@ -73,7 +65,6 @@ stages:
               } catch {
                 Write-Host "Skipping $($r.addr) — likely already in state or not found."
               }
-            }
             }
       - task: TerraformCLI@2
         inputs:
