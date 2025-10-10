@@ -53,21 +53,43 @@ stages:
           inlineScript: |
             # Fail on errors
             $ErrorActionPreference = "Stop"
-            Write-Host "Running Terraform imports (ignoring any failures)..."
+            Write-Host "Running Terraform imports (validating Azure resources first)..."
 
+            # Define resources and how to check their existence
             $resources = @(
-              @{ addr = "azurerm_resource_group.tfstate_rg"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp" },
-              @{ addr = "azurerm_storage_account.tfstate_sa"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp" }
-              @{ addr = "azurerm_storage_container.tfstate_container"; id = "https://tfstatestoragecontapp.blob.core.windows.net/tfstate-contapp" }
+              @{
+                addr = "azurerm_resource_group.tfstate_rg"
+                id   = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp"
+                check = { az group show -n "tfstatestoragecontapp" --query "id" -o tsv 2>$null }
+              },
+              @{
+                addr = "azurerm_storage_account.tfstate_sa"
+                id   = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp"
+                check = { az storage account show -n "tfstatestoragecontapp" -g "tfstatestoragecontapp" --query "id" -o tsv 2>$null }
+              },
+              @{
+                addr = "azurerm_storage_container.tfstate_container"
+                id   = "https://tfstatestoragecontapp.blob.core.windows.net/tfstate-contapp"
+                check = { az storage account show -n "tfstatestoragecontapp" -g "tfstatestoragecontapp" --query "id" -o tsv 2>$null }
+              }
             )
 
             foreach ($r in $resources) {
-              Write-Host "Attempting to import $($r.addr)..."
+              Write-Host "`nChecking existence of Azure resource for $($r.addr)..."
+
               try {
+                $exists = & $r.check
+                if (-not $exists) {
+                  Write-Host "Resource for $($r.addr) not found in Azure. Skipping import."
+                  continue
+                }
+
+                Write-Host "Resource exists in Azure. Attempting Terraform import for $($r.addr)..."
                 & terraform import $($r.addr) $($r.id)
                 Write-Host "Successfully imported $($r.addr)"
-              } catch {
-                Write-Host "Skipping $($r.addr) - likely already in state or not found."
+              }
+              catch {
+                Write-Host "Error while checking or importing $($r.addr): $($_.Exception.Message)"
               }
             }
         displayName: "Validate if it is needed to import resources from the state"  
