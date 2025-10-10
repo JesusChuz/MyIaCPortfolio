@@ -42,7 +42,7 @@ stages:
           environmentServiceName: 'ServiceConnectiontoDevOps'
           runAzLogin: true
           allowTelemetryCollection: true
-          commandOptions: '-out=plan.out'
+          publishPlanResults: 'plan.out'
         displayName: "Plan the deployment"
       # Convert plan.out to JSON
       - script: |
