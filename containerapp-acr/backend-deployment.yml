@@ -51,11 +51,14 @@ stages:
           workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           scriptLocation: 'inlineScript'
           inlineScript: |
+            # Fail on errors
+            $ErrorActionPreference = "Stop"
             Write-Host "Running Terraform imports (ignoring any failures)..."
 
             $resources = @(
               @{ addr = "azurerm_resource_group.tfstate_rg"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp" },
               @{ addr = "azurerm_storage_account.tfstate_sa"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp" }
+              @{ addr = "azurerm_storage_container.tfstate_container"; id = "https://tfstatestoragecontapp.blob.core.windows.net/tfstate-contapp" }
             )
 
             foreach ($r in $resources) {
