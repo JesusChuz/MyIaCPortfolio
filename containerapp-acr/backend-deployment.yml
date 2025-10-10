@@ -48,6 +48,7 @@ stages:
         inputs:
           azureSubscription: '$(serviceConnection)'
           scriptType: 'ps'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
           scriptLocation: 'inlineScript'
           inlineScript: |
             Write-Host "Running Terraform imports (ignoring any failures)..."
@@ -63,7 +64,7 @@ stages:
                 & terraform import $($r.addr) $($r.id)
                 Write-Host "Successfully imported $($r.addr)"
               } catch {
-                Write-Host "Skipping $($r.addr) — likely already in state or not found."
+                Write-Host "Skipping $($r.addr) - likely already in state or not found."
               }
             }
       - task: TerraformCLI@2
