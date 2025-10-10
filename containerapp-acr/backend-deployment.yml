@@ -55,6 +55,7 @@ stages:
             cd create-backend
             dir
             terraform init
+            dir
             # Fail on errors
             $ErrorActionPreference = "Stop"
 
