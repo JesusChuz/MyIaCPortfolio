@@ -28,6 +28,7 @@ stages:
         inputs:
           command: 'version'
           allowTelemetryCollection: true
+        displayName: "Check terraform version"   
       - task: TerraformCLI@2
         inputs:
           command: 'init'
@@ -43,12 +44,6 @@ stages:
           runAzLogin: true
           allowTelemetryCollection: true
         displayName: "Plan the deployment"
-      - task: TerraformCLI@2
-        inputs:
-          command: 'output'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/containerapp-acr/create-backend'
-          commandOptions: '-json'
-          allowTelemetryCollection: false
       - task: AzureCLI@2
         inputs:
           azureSubscription: '$(serviceConnection)'
@@ -58,29 +53,6 @@ stages:
           inlineScript: |
             # Fail on errors
             $ErrorActionPreference = "Stop"
-             # Run terraform output and capture JSON
-            $tfOutput = terraform output -json | Out-String
-            
-            Write-Host "Raw Terraform output:"
-            Write-Host $tfOutput
-            
-            # Parse JSON
-            $props = $tfOutput | ConvertFrom-Json
-            
-            # Extract values from outputs
-            $rgName = $props.resource_group_name.value
-            $saName = $props.app_service_name.value
-            $saContainerName = $props.slot_name.value
-
-            Write-Host "Resource Group: $rgName"
-            Write-Host "Storage account: $saName"
-            Write-Host "Storage account container: $saContainerName"
-            
-            # Export as Azure DevOps pipeline variables
-            Write-Host "##vso[task.setvariable variable=AZ_RG;isOutput=true]$rgName"
-            Write-Host "##vso[task.setvariable variable=AZ_SA;isOutput=true]$saName"
-            Write-Host "##vso[task.setvariable variable=AZ_SA_CONTAINER;isOutput=true]$saContainerName"
-
             Write-Host "Running Terraform imports (ignoring any failures)..."
 
             $resources = @(
@@ -98,6 +70,7 @@ stages:
                 Write-Host "Skipping $($r.addr) - likely already in state or not found."
               }
             }
+        displayName: "Validate if it is needed to import resources from the state"  
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
