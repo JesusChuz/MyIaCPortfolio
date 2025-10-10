@@ -54,7 +54,7 @@ stages:
             cd containerapp-acr
             cd create-backend
             dir
-            terraform init
+            cd .terraform
             dir
             # Fail on errors
             $ErrorActionPreference = "Stop"
