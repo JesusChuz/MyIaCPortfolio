@@ -52,7 +52,7 @@ stages:
           scriptLocation: 'inlineScript'
           inlineScript: |
             # Fail on errors
-            $ErrorActionPreference = "Stop"
+            $ErrorActionPreference = "Continue"
             Write-Host "Running Terraform imports (validating Azure resources first)..."
 
             # Define resources and how to check their existence
