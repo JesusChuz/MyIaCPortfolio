@@ -74,6 +74,7 @@ stages:
                 Write-Host "Skipping $($r.addr) — likely already in state or not found."
               }
             }
+            }
       - task: TerraformCLI@2
         inputs:
           command: 'apply'
