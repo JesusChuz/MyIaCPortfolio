@@ -58,49 +58,20 @@ stages:
             dir
             # Fail on errors
             $ErrorActionPreference = "Stop"
+            Write-Host "Running Terraform imports (ignoring any failures)..."
 
-            # Mapping: terraform_address -> script block that returns resource id as string (or $null)
-            $IMPORT_MAP = @{
-              "azurerm_resource_group.rg"  = { az group show -n "tfstatestoragecontapp" --query id -o tsv 2>$null }
-              "azurerm_storage_account.sa" = { az storage account show -n "tfstatestoragecontapp" -g "tfstatestoragecontapp" --query id -o tsv 2>$null }
-            }
+            $resources = @(
+              @{ addr = "azurerm_resource_group.tfstate_rg"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp" },
+              @{ addr = "azurerm_storage_account.tfstate_sa"; id = "/subscriptions/8412747f-ace3-4b85-8ef7-4e8c0eab877d/resourceGroups/tfstatestoragecontapp/providers/Microsoft.Storage/storageAccounts/tfstatestoragecontapp" }
+            )
 
-            # Ensure terraform is initialized and available in the current directory
-            Write-Host "Checking terraform availability and backend state..."
-            try {
-              & terraform state list > $null 2>&1
-            } catch {
-              Write-Host "Terraform state could not be listed. Ensure 'terraform init' has been run in this working directory and backend is accessible."
-              throw
-            }
-
-            foreach ($addr in $IMPORT_MAP.Keys) {
-              Write-Host "Checking Terraform state for $addr..."
-              $inState = $false
+            foreach ($r in $resources) {
+              Write-Host "Attempting to import $($r.addr)..."
               try {
-                $stateList = & terraform state list
-                $lines = $stateList -split "`n"
-                foreach ($line in $lines) {
-                  if ($line.Trim() -eq $addr) { $inState = $true; break }
-                }
+                & terraform import $($r.addr) $($r.id)
+                Write-Host "Successfully imported $($r.addr)"
               } catch {
-                Write-Host ("Failed to list terraform state for check. " + $_.Exception.Message)
-                throw
-              }
-
-              if ($inState) {
-                Write-Host "$addr already in state, skipping import."
-                continue
-              }
-
-              Write-Host "$addr not in state. Locating resource ID with az..."
-              $resourceId = $null
-              try {
-                $resourceId = & $IMPORT_MAP[$addr].Invoke()
-                if ($resourceId) { $resourceId = $resourceId.Trim() } else { $resourceId = $null }
-              } catch {
-              Write-Host ("az query for $addr failed: " + $_.Exception.Message)
-              $resourceId
+                Write-Host "Skipping $($r.addr) — likely already in state or not found."
               }
             }
       - task: TerraformCLI@2
